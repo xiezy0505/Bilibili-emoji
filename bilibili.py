@@ -5,8 +5,11 @@ import re
 # --- 配置区域 ---
 # ⚠️ 注意: 请不要将你的真实 SESSDATA 提交到 GitHub!
 # 建议通过环境变量或本地配置文件读取
-import os
-SESSDATA = os.getenv("BILIBILI_SESSDATA", "YOUR_SESSDATA_HERE") 
+SESSDATA = os.getenv("BILIBILI_SESSDATA")
+
+if not SESSDATA or SESSDATA == "YOUR_SESSDATA_HERE":
+    print("提示: 未检测到环境变量 BILIBILI_SESSDATA")
+    SESSDATA = input("请输入您的 Bilibili SESSDATA (直接回车尝试游客访问，可能受限): ").strip()
 # --- --- --- ---
 
 url = "https://api.bilibili.com/x/emote/user/panel/web?business=reply"
