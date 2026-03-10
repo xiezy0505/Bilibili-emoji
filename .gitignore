@@ -1,0 +1,24 @@
+# Python defaults
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VS Code
+.vscode/
+
+# Project specific
+BILIBILI_SESSDATA
+*.log
+
+# Sensitive folders (downloaded content)
+表情包/
+表情包x4/
+动态表情包/
+MCM图/
+temp_frames_input_*
+temp_frames_output_*
+palette_*.png
+
+# Ignore test files
+*.gif
+!sample.gif
