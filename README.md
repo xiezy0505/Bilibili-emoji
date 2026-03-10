@@ -3,7 +3,7 @@
 这个项目包含三个主要的脚本：
 
 1.  `bilibili.py`: 用于下载 Bilibili 表情包。
-2.  `process_gif.py`: 用于使用 Real-ESRGAN 对 GIF 动画表情包进行超分辨率放大。
+2.  `process_gif.py`: 用于使用 ffmpeg 和 Real-ESRGAN 对 GIF 动画表情包进行超分辨率放大。
 3.  `process_image.py`: 用于使用 Real-ESRGAN 对普通图片表情包（PNG, JPG 等）进行超分辨率放大。
 
 ## 安装依赖
