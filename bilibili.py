@@ -25,12 +25,16 @@ def download():
             return
 
         packages = data['data']['packages']
+        print(f"检测到 {len(packages)} 个表情包。")
+        
+        user_input = input("请输入要下载的表情包关键字(空格分隔，直接回车下载全部): ").strip()
+        keywords = user_input.split() if user_input else []
+
         for pkg in packages:
             pkg_name = pkg['text']
             
             # 筛选特定的表情包：只要名字里包含这些词中的任意一个，就下载
-            keywords = ["RIDDLE", "千恋万花", "魔女", "星光咖啡馆"]
-            if not any(k in pkg_name for k in keywords):
+            if keywords and not any(k in pkg_name for k in keywords):
                 continue
 
             # 过滤掉文件夹名中的非法字符

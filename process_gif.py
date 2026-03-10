@@ -5,77 +5,78 @@ import sys
 import glob
 
 # --- 配置区域 ---
-# 请确保 realesrgan-ncnn-vulkan.exe 在此脚本同级目录或系统 PATH 环境变量中
-REAL_ESRGAN_EXE = "realesrgan-ncnn-vulkan.exe"
+# 请将 ffmpeg.exe 和 realesrgan-ncnn-vulkan.exe (及其 models 文件夹) 放入 bin 目录中
+REAL_ESRGAN_FILENAME = "realesrgan-ncnn-vulkan.exe"
+FFMPEG_FILENAME = "ffmpeg.exe"
+
 # 模型可选: realesrgan-x4plus-anime (推荐动漫), realesrgan-x4plus
 MODEL_NAME = "realesrgan-x4plus-anime"
 # 放大倍率 (2, 3, 4)
 SCALE = 4
 # --- --- ---
 
+# 全局变量
+FFMPEG_EXE = "ffmpeg"
+REAL_ESRGAN_EXE = REAL_ESRGAN_FILENAME
+
 def check_dependencies():
-    """检查 ffmpeg 和 realesrgan 是否可用"""
+    """检查 ffmpeg 和 realesrgan 是否可用，优先检查 bin 目录"""
+    global FFMPEG_EXE, REAL_ESRGAN_EXE
+    
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    bin_dir = os.path.join(script_dir, "bin")
     
-    # Check 1: FFmpeg
-    ffmpeg_exe = "ffmpeg"
-    # 尝试在当前目录找 ffmpeg.exe
-    local_ffmpeg = os.path.join(script_dir, "ffmpeg.exe")
-    if os.path.exists(local_ffmpeg):
-        ffmpeg_exe = local_ffmpeg
+    # 1. Check FFmpeg
+    bin_ffmpeg = os.path.join(bin_dir, FFMPEG_FILENAME)
+    local_ffmpeg = os.path.join(script_dir, FFMPEG_FILENAME)
     
-    try:
-        subprocess.run([ffmpeg_exe, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    if os.path.exists(bin_ffmpeg):
+        FFMPEG_EXE = bin_ffmpeg
+    elif os.path.exists(local_ffmpeg):
+        FFMPEG_EXE = local_ffmpeg
+    elif shutil.which("ffmpeg"):
+        FFMPEG_EXE = "ffmpeg"
+    else:
         print("错误: 未找到 ffmpeg。")
-        print("请尝试以下解决方案之一：")
-        print("1. 确保已安装 ffmpeg 并将其 bin 目录添加到系统环境变量 PATH 中。")
-        print("   (注意: 添加环境变量后，必须完全重启 VS Code 或终端才能生效)")
-        print(f"2. 或者，将 ffmpeg.exe 复制到此脚本同级目录: {script_dir}")
+        print("请将 ffmpeg.exe 放入 'bin' 文件夹中。")
         return False
 
-    # Check 2: Real-ESRGAN
-    # 尝试直接运行命令，或者检查当前目录是否存在
-    # 优先级: 脚本同级目录 > PATH
-    local_realesrgan = os.path.join(script_dir, REAL_ESRGAN_EXE)
+    # 2. Check Real-ESRGAN
+    bin_realesrgan = os.path.join(bin_dir, REAL_ESRGAN_FILENAME)
+    local_realesrgan = os.path.join(script_dir, REAL_ESRGAN_FILENAME)
     
-    realesrgan_path = None
-    if os.path.exists(local_realesrgan):
-        realesrgan_path = local_realesrgan
-    elif shutil.which(REAL_ESRGAN_EXE):
-        realesrgan_path = REAL_ESRGAN_EXE
-        
-    if not realesrgan_path:
-        print(f"错误: 未找到 {REAL_ESRGAN_EXE}。")
-        print("请尝试以下解决方案之一：")
-        print(f"1. 将 {REAL_ESRGAN_EXE} 复制到此脚本同级目录: {script_dir}")
-        print("2. 或者，将其所在的目录添加到系统环境变量 PATH 中。")
-        print("   (注意: 添加环境变量后，必须完全重启 VS Code 或终端才能生效)")
+    if os.path.exists(bin_realesrgan):
+        REAL_ESRGAN_EXE = bin_realesrgan
+    elif os.path.exists(local_realesrgan):
+        REAL_ESRGAN_EXE = local_realesrgan
+    elif shutil.which(REAL_ESRGAN_FILENAME):
+        REAL_ESRGAN_EXE = REAL_ESRGAN_FILENAME
+    else:
+        print(f"错误: 未找到 {REAL_ESRGAN_FILENAME}。")
+        print(f"请将 {REAL_ESRGAN_FILENAME} 及其 models 文件夹放入 'bin' 文件夹中。")
         return False
 
-    # 更新全局变量，确保后续使用的是找到的路径
-    global REAL_ESRGAN_EXE_PATH
-    REAL_ESRGAN_EXE_PATH = realesrgan_path
-    
+    print(f"使用 FFmpeg: {FFMPEG_EXE}")
+    print(f"使用 Real-ESRGAN: {REAL_ESRGAN_EXE}")
     return True
 
 def get_fps(input_file):
     """获取 GIF 帧率"""
     try:
         cmd = [
-            'ffprobe',
-            '-v', 'error',
-            '-select_streams', 'v:0',
-            '-show_entries', 'stream=r_frame_rate',
-            '-of', 'default=noprint_wrappers=1:nokey=1',
-            input_file
+            FFMPEG_EXE, '-i', input_file
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        fps_str = result.stdout.strip()
-        if '/' in fps_str:
-            num, den = map(int, fps_str.split('/'))
-            return num / den
-        return float(fps_str)
+        # ffmpeg -i info sent to stderr
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Parse framerate from stderr
+        # e.g. Stream #0:0: Video: gif, bgra, 300x300, 15 fps, 15 tbr, 100 tbn
+        import re
+        match = re.search(r'(\d+(?:\.\d+)?)\s+fps', result.stderr)
+        if match:
+            return float(match.group(1))
+        
+        print("警告: 无法从 ffmpeg 输出中检测帧率，使用默认值 15.0")
+        return 15.0
     except Exception as e:
         print(f"获取帧率失败，将使用默认值 15.0: {e}")
         return 15.0
@@ -105,7 +106,7 @@ def process_gif(input_path, output_dir=None):
 
     output_gif = os.path.join(final_output_dir, f"{name_no_ext}_HD.gif")
 
-    # 临时目录跟随输出目录，避免跨盘问题
+    # 临时目录跟随输出目录
     temp_root = final_output_dir
     temp_input_dir = os.path.join(temp_root, f"temp_frames_input_{os.getpid()}")
     temp_output_dir = os.path.join(temp_root, f"temp_frames_output_{os.getpid()}")
@@ -125,38 +126,37 @@ def process_gif(input_path, output_dir=None):
         # 2. 拆分帧
         print("[1/4] 拆分 GIF 帧...")
         subprocess.run([
-            "ffmpeg", "-i", input_path, 
+            FFMPEG_EXE, "-i", input_path, 
             os.path.join(temp_input_dir, "frame_%04d.png")
         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         # 3. 超分辨率处理
         print(f"[2/4] 使用 Real-ESRGAN 放大 (x{SCALE})...")
-        # 构建 Real-ESRGAN 命令
-        exe_path = REAL_ESRGAN_EXE
-        if not shutil.which(REAL_ESRGAN_EXE) and os.path.exists(REAL_ESRGAN_EXE):
-             exe_path = os.path.abspath(REAL_ESRGAN_EXE)
-             
+        
+        cwd_path = os.path.dirname(REAL_ESRGAN_EXE)
+        if not cwd_path: cwd_path = None
+
         cmd_upscale = [
-            exe_path,
+            REAL_ESRGAN_EXE,
             "-i", temp_input_dir,
             "-o", temp_output_dir,
             "-n", MODEL_NAME,
             "-s", str(SCALE),
             "-f", "png"
         ]
-        subprocess.run(cmd_upscale, check=True)
+        
+        subprocess.run(cmd_upscale, check=True, cwd=cwd_path)
 
         # 4. 合成 GIF
         print("[3/4] 生成调色板...")
-        # 生成调色板以获得更好画质
         subprocess.run([
-            "ffmpeg", "-i", os.path.join(temp_output_dir, "frame_%04d.png"),
+            FFMPEG_EXE, "-i", os.path.join(temp_output_dir, "frame_%04d.png"),
             "-filter_complex", "palettegen=stats_mode=diff", "-y", palette_path
         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         print("[4/4] 合成高清 GIF...")
         subprocess.run([
-            "ffmpeg", 
+            FFMPEG_EXE, 
             "-framerate", str(fps),
             "-i", os.path.join(temp_output_dir, "frame_%04d.png"),
             "-i", palette_path,
@@ -171,9 +171,12 @@ def process_gif(input_path, output_dir=None):
     finally:
         # 清理
         print("清理临时文件...")
-        if os.path.exists(temp_input_dir): shutil.rmtree(temp_input_dir)
-        if os.path.exists(temp_output_dir): shutil.rmtree(temp_output_dir)
-        if os.path.exists(palette_path): os.remove(palette_path)
+        try:
+            if os.path.exists(temp_input_dir): shutil.rmtree(temp_input_dir)
+            if os.path.exists(temp_output_dir): shutil.rmtree(temp_output_dir)
+            if os.path.exists(palette_path): os.remove(palette_path)
+        except:
+            pass
 
 if __name__ == "__main__":
     if not check_dependencies():

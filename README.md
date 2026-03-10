@@ -1,15 +1,18 @@
-# Bilibili Emote Tools & GIF Super Resolution
+# Bilibili Emote Tools & Image Super Resolution
 
-这个项目包含两个主要的 Python 脚本：
+这个项目包含三个主要的脚本：
 
 1.  `bilibili.py`: 用于下载 Bilibili 表情包。
 2.  `process_gif.py`: 用于使用 Real-ESRGAN 对 GIF 动画进行超分辨率放大。
+3.  `process_image.py`: 用于使用 Real-ESRGAN 对普通图片（PNG, JPG 等）进行超分辨率放大。
 
 ## 安装依赖
 
 ```bash
 pip install requests
-# 注意: process_gif.py 依赖 ffmpeg 和 realesrgan-ncnn-vulkan
+# 注意: 
+# process_gif.py 依赖 ffmpeg 和 realesrgan-ncnn-vulkan
+# process_image.py 依赖 realesrgan-ncnn-vulkan
 ```
 
 ## 使用说明
@@ -24,6 +27,12 @@ python bilibili.py
 ```bash
 python process_gif.py
 # 或直接拖拽 GIF 文件到 clear.bat 上
+```
+
+### 图片超分 (PNG/JPG等)
+```bash
+python process_image.py
+# 或直接拖拽 单张/多张图片 或 文件夹 到 clear_image.bat 上
 ```
 
 ## 注意事项
