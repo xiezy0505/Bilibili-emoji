@@ -23,7 +23,7 @@ pip install requests
 python bilibili.py
 ```
 
-## 超分(清晰化)
+### 超分(清晰化)
 > 超分时可以自定义模型, 放大倍率等参数
 
 #### GIF 超分
@@ -32,7 +32,7 @@ python process_gif.py
 # 或直接拖拽 GIF 文件到 clear.bat 上
 ```
 
-### 图片超分 (PNG/JPG等)
+#### 图片超分 (PNG/JPG等)
 ```bash
 python process_image.py
 # 或直接拖拽 单张/多张图片 或 文件夹 到 clear_image.bat 上
