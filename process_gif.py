@@ -19,11 +19,18 @@ SCALE = 4
 FFMPEG_EXE = "ffmpeg"
 REAL_ESRGAN_EXE = REAL_ESRGAN_FILENAME
 
+def get_base_path():
+    """获取脚本或可执行文件的基础路径"""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    else:
+        return os.path.dirname(os.path.abspath(__file__))
+
 def check_dependencies():
     """检查 ffmpeg 和 realesrgan 是否可用，优先检查 bin 目录"""
     global FFMPEG_EXE, REAL_ESRGAN_EXE
     
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = get_base_path()
     bin_dir = os.path.join(script_dir, "bin")
     
     # 1. Check FFmpeg

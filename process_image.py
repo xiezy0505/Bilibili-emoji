@@ -15,9 +15,16 @@ MODEL_NAME = "realesrgan-x4plus-anime"
 SCALE = 4
 # --- --- ---
 
+def get_base_path():
+    """获取脚本或可执行文件的基础路径"""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    else:
+        return os.path.dirname(os.path.abspath(__file__))
+
 def check_dependencies():
     """检查 realesrgan 是否可用，优先检查 bin 目录"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = get_base_path()
     bin_dir = os.path.join(script_dir, "bin")
     
     # Check: Real-ESRGAN
@@ -43,7 +50,7 @@ def check_dependencies():
     print(f"使用 Real-ESRGAN: {realesrgan_path}")
     return realesrgan_path
 
-def process_file(file_path, realesrgan_path):
+def process_file(file_path, realesrgan_path, output_dir=None):
     """处理单个图片文件"""
     if not os.path.exists(file_path):
         print(f"错误: 文件不存在 -> {file_path}")
@@ -58,9 +65,21 @@ def process_file(file_path, realesrgan_path):
         return
 
     output_filename = f"{name}_out.png" # 强制输出为 png
-    output_path = os.path.join(os.path.dirname(file_path), output_filename)
     
-    print(f"正在处理: {filename} -> {output_filename}")
+    if output_dir:
+        # 如果指定了输出目录，则使用该目录
+        if not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+            except Exception as e:
+                print(f"创建输出目录失败: {e}")
+                return
+        output_path = os.path.join(output_dir, output_filename)
+    else:
+        # 否则保存在原目录
+        output_path = os.path.join(os.path.dirname(file_path), output_filename)
+    
+    print(f"正在处理: {filename} -> {output_path}")
 
     # 构建 Real-ESRGAN 命令
     cmd = [
@@ -96,6 +115,8 @@ def main():
     if not realesrgan_path:
         sys.exit(1)
 
+    output_dir = None
+
     # 获取拖拽的文件或命令行参数
     if len(sys.argv) > 1:
         input_paths = sys.argv[1:]
@@ -112,6 +133,10 @@ def main():
         except:
             input_paths = user_input.split()
 
+        output_inp = input("请输入输出目录路径 (直接回车默认保存在原目录): ").strip()
+        if output_inp:
+            output_dir = output_inp.strip('"')
+
     for path in input_paths:
         # 去除可能的引号
         path = path.strip('"').strip("'")
@@ -120,7 +145,7 @@ def main():
              # 检查是否是图片
             ext = os.path.splitext(path)[1].lower()
             if ext in ['.png', '.jpg', '.jpeg', '.webp', '.bmp']:
-                process_file(path, realesrgan_path)
+                process_file(path, realesrgan_path, output_dir=output_dir)
             else:
                 print(f"跳过非图片文件: {path}")
 
@@ -140,11 +165,12 @@ def main():
                  print(f"文件夹内未找到图片: {path}")
 
             for file_path in files:
-                process_file(file_path, realesrgan_path)
+                process_file(file_path, realesrgan_path, output_dir=output_dir)
         else:
              print(f"无效路径: {path}")
 
     print("\n所有任务完成！")
+    input("按回车键退出...")
 
 if __name__ == "__main__":
     main()

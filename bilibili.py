@@ -30,6 +30,10 @@ def download():
         user_input = input("请输入要下载的表情包关键字(空格分隔，直接回车下载全部): ").strip()
         keywords = user_input.split() if user_input else []
 
+        download_base_dir = input("请输入下载保存路径(直接回车默认为当前目录): ").strip()
+        if not download_base_dir:
+            download_base_dir = "."
+
         for pkg in packages:
             pkg_name = pkg['text']
             
@@ -39,7 +43,8 @@ def download():
 
             # 过滤掉文件夹名中的非法字符
             pkg_name = re.sub(r'[\\/:*?"<>|]', '', pkg_name)
-            os.makedirs(pkg_name, exist_ok=True)
+            target_dir = os.path.join(download_base_dir, pkg_name)
+            os.makedirs(target_dir, exist_ok=True)
             print(f"正在下载表情包: {pkg_name}")
 
             for e in pkg['emote']:
@@ -54,7 +59,7 @@ def download():
                 
                 img_name = e['text'].replace("[", "").replace("]", "")
                 suffix = img_url.split(".")[-1]
-                file_path = f"{pkg_name}/{img_name}.{suffix}"
+                file_path = os.path.join(target_dir, f"{img_name}.{suffix}")
 
                 img_data = requests.get(img_url).content
                 with open(file_path, "wb") as f:
@@ -67,3 +72,4 @@ def download():
 
 if __name__ == "__main__":
     download()
+    input("\n按回车键退出...")
